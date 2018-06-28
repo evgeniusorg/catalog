@@ -1,0 +1,86 @@
+.catalog
+    &-header
+        width: 100%
+        display: flex
+        flex-direction: row
+        justify-content: space-between
+        align-items: flex-end
+        border-bottom: 1px solid $color_grey
+        padding-bottom: 15px
+        margin: 30px 0
+
+        &-filter
+            display: flex
+            flex-direction: row
+            justify-content: flex-end
+            align-item: center
+
+            &-block
+                margin-left: 30px
+                    
+                button
+                    margin-left: 5px
+    &-list
+        display: flex
+        flex-direction: row
+        justify-content: flex-start
+        align-items: flex-start
+        flex-wrap: wrap
+
+
+        &-item 
+            width: 220px
+            height: 370px
+            padding: 15px
+            border-radius: 5px
+            box-sizing: border-box
+            position: relative
+
+            &-btns
+                display: none
+                position: absolute
+                bottom: 15px
+                right: 15px
+
+                button
+                    margin-left: 5px
+
+            &:hover 
+                box-shadow: 0px 0px 5px $color_shadow
+
+                .catalog-list-item-btns
+                    display: block
+
+            &-img
+                width: 190px
+                height: 190px
+                border: 1px solid #ccc
+                display: flex
+                flex-direction: column
+                justify-content: center
+                box-sizing: border-box
+                margin-bottom: 5px
+                
+                img
+                    max-width: 188px
+                    max-height: 188px
+            
+            &-title
+                font-weight: bold
+                font-size: 16px
+                margin-bottom: 5px
+
+            &-description
+                color: $color_grey
+                margin-bottom: 15px
+                height: 48px
+                overflow: hidden
+
+            &-price
+                color: $color_grey
+                padding-top: 5px
+                border-top: 1px solid $color_grey
+
+                span
+                    font-weight: bold
+                    color: $color_black
