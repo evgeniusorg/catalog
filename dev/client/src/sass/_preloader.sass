@@ -1,0 +1,45 @@
+.preloader
+  width: 100vw
+  height: 100vh
+  position: fixed
+  top: 0px
+  left: 0px
+  background: $modal_background
+  z-index: 2
+  display: flex
+  flex-direction: column
+  justify-content: center
+  aling-items: center
+
+  &-inner 
+    $animationDuration: 1.4s
+    $delayRange: 0.32s
+    $spinkit-size: 4em;
+    width: ($spinkit-size * 2)
+    margin: auto
+    text-align: center
+
+    &-bounce
+      width: ($spinkit-size / 2)
+      height: ($spinkit-size / 2)
+      background-color: $color_blue
+      margin: 2px
+      border-radius: 100%
+      display: inline-block
+      animation: bounce-animation $animationDuration ease-in-out 0s infinite both
+  
+      &.bounce-3 
+        animation-delay: $delayRange
+
+      &.bounce-2 
+        animation-delay: ($delayRange / 2)
+  
+@keyframes bounce-animation 
+  0%, 80%, 100% 
+    transform: scale(0)
+  
+  40% 
+    transform: scale(1.0)
+  
+
+

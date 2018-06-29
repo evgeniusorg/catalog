@@ -13,10 +13,11 @@ body
 button
     padding: 2px 5px
     border-radius: 2px
-    border: 1px solid $color_grey
-    color: $color_grey
-
-
+    border: 1px solid $color_dark_grey
+    color: $color_dark_grey
+    background: none
+    output: none
+      
     &:hover
         color: $color_black
         border: 1px solid $color_black
@@ -27,6 +28,9 @@ button
 
 h1
   font-size: 24px
+
+input, textarea, button
+  outline: none
 
 .app
     width: $app_width

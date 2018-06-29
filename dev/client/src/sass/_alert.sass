@@ -1,0 +1,24 @@
+.alert
+  position: fixed
+  top: 0
+  left: 0
+  width: 100vw
+  display: flex
+  flex-direction: row
+  justify-content: center
+  align-items: flex-start
+
+  & > div
+    width: 300px
+    padding: 15px
+    border-radius: 5px
+    font-weight: bold
+    margin-top: 30px
+
+    &.error
+      background: #ffe4e4
+      color: $color_red
+
+    &.success
+      background: #d8ffcf
+      color: #2b8417
