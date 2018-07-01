@@ -7,20 +7,14 @@ import ModalEdit from './ModalEditContainer'
 import ModalDelete from './ModalDeleteContainer'
 import GoodContainer from './GoodContainer'
 
+import {checkStatus, parseJSON} from '../modules/modulesRequest'
+
 export class App extends React.Component {
   constructor(props){
     super(props);
 
     this.state = {
-      goods: [
-        {
-          id: 1,
-          title: 'Cat 1',
-          img: '',
-          description: 'test description. asd asd asd as da sdas da sd a sd as d asd a d asd ads asdasd aasdasda sda sd a sd asd asd a sd as da sd a sd as da d a sd a sd ad a',
-          price: 2000,
-        },
-      ],
+      goods: [],
       sorting: 'id',
       offset: 0,
       limit: 100,
@@ -48,9 +42,13 @@ export class App extends React.Component {
       method: 'get',
       json: true,
     }
-    fetch(`${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}`, options).then((response)=>{
-      this.catchResponse([...this.state.goods, ...response.goods], response.total)
-    },(error)=>{
+    fetch(`${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}`, options)
+    .then(checkStatus)
+    .then(parseJSON)
+    .then((data)=>{
+      this.catchResponse([...this.state.goods, ...data.goods], data.total)
+    })
+    .catch((error)=>{
       this.catchError(error)
     })
   }
@@ -58,16 +56,23 @@ export class App extends React.Component {
   //save new good
   addGood(good){
     this.setState({request: this.state.request + 1})
-
+    console.log(good)
     let options = {
       method: 'post',
-      data:good,
+      body: JSON.stringify(good),
+      header:{
+        'Content-Type': 'application/json',
+      },
     }
-    fetch(`${CONFIG.URL_API}goods/`, options).then((response)=>{
+    fetch(`${CONFIG.URL_API}goods/`, options)
+    .then(checkStatus)
+    .then(parseJSON)
+    .then((data)=>{
       this.catchResponse([], this.state.total - 1, 'Good was added!')
       this.load(this.state.sorting, this.state.offset, 0)
       this.closeModal()
-    },(error)=>{
+    })
+    .catch((error)=>{
       this.catchError(error)
     })
   }
@@ -78,12 +83,19 @@ export class App extends React.Component {
 
     let options = {
       method: 'put',
-      data: good,
+      body: JSON.stringify(good),
+      header:{
+        'Content-Type': 'application/json',
+      },
     }
-    fetch(`${CONFIG.URL_API}goods/${good.id}`, options).then((response)=>{
-      this.catchResponse([...this.state.goods].forEach(e => e.id === good.id ? good : e), this.state.total, 'Good was updated!')
+    fetch(`${CONFIG.URL_API}goods/${good.id}`, options)
+    .then(checkStatus)
+    .then(parseJSON)
+    .then((data)=>{
+      this.catchResponse([...this.state.goods].map(e => e.id === good.id ? good : e), this.state.total, 'Good was updated!')
       this.closeModal()
-    },(error)=>{
+    })
+    .catch((error)=>{
       this.catchError(error)
     })
   }
@@ -96,10 +108,14 @@ export class App extends React.Component {
       method: 'delete',
     }
 
-    fetch(`${CONFIG.URL_API}goods/${id}`, options).then((response)=>{      
+    fetch(`${CONFIG.URL_API}goods/${id}`, options)
+    .then(checkStatus)
+    .then(parseJSON)
+    .then((data)=>{    
       this.catchResponse([...this.state.goods].filter(e => e.id !== id), this.state.total - 1, 'Good was deleted!')
       this.closeModal()
-    },(error)=>{
+    })
+    .catch((error)=>{
       this.catchError(error)
     })
   }
@@ -139,12 +155,11 @@ export class App extends React.Component {
 
   //actions after request with error
   catchError(error){
-    console.log(error)
     this.setState({
       request: this.state.request - 1, 
       alert: {
         type: 'error',
-        text: JSON.stringify(error),
+        text: error.message,
       }
     })
     this.closeAllert()

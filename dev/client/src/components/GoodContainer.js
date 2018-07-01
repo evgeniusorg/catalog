@@ -11,6 +11,6 @@ export default function GoodContainer(props) {
     </div>
     <div className="catalog-list-item-title">{props.good.title}</div>
     <div className="catalog-list-item-description">{props.good.description}</div>
-    <div className="catalog-list-item-price">Price: <span>{props.good.price}$</span></div>
+    <div className="catalog-list-item-price">Price: <span>{props.good.price} $</span></div>
   </div>
 } 
