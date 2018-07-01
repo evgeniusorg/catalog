@@ -56,7 +56,6 @@ export class App extends React.Component {
   //save new good
   addGood(good){
     this.setState({request: this.state.request + 1})
-    console.log(good)
     let options = {
       method: 'post',
       body: JSON.stringify(good),
@@ -68,9 +67,9 @@ export class App extends React.Component {
     .then(checkStatus)
     .then(parseJSON)
     .then((data)=>{
+      this.closeModal()
       this.catchResponse([], this.state.total - 1, 'Good was added!')
       this.load(this.state.sorting, this.state.offset, 0)
-      this.closeModal()
     })
     .catch((error)=>{
       this.catchError(error)
