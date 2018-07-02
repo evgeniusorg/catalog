@@ -110,7 +110,8 @@ export class App extends React.Component {
     fetch(`${CONFIG.URL_API}goods/${id}`, options)
     .then(checkStatus)
     .then(parseJSON)
-    .then((data)=>{    
+    .then((data)=>{   
+      this.state({offset: this.state.offset - 1}) 
       this.catchResponse([...this.state.goods].filter(e => e.id !== id), this.state.total - 1, 'Good was deleted!')
       this.closeModal()
     })
@@ -122,13 +123,13 @@ export class App extends React.Component {
   //change type of sorting
   changeSorting(sorting){
     this.setState({sorting, offset: 0, goods: []})
-    this.load(sorting, this.state.limit, this.state.offset)
+    this.load(sorting, this.state.limit, 0)
   }
 
   //change limit
   changeLimit(limit){
     this.setState({limit, offset: 0, goods: []})
-    this.load(this.state.sorting, limit, this.state.offset)
+    this.load(this.state.sorting, limit, 0)
   }
 
   //load more goods

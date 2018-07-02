@@ -14,7 +14,7 @@
       $sorting = $mysqli->real_escape_string($_GET['sorting']);
       $offset = $mysqli->real_escape_string($_GET['offset']);
 
-      $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT * FROM goods ORDER BY $sorting DESC LIMIT $offset, $limit";
+      $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT * FROM goods";
 
       $searchGoods = $mysqli->query($sql, MYSQLI_STORE_RESULT);
       if ($mysqli->errno) {
