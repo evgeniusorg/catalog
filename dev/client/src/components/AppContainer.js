@@ -17,6 +17,7 @@ export class App extends React.Component {
       goods: [],
       sorting: 'id',
       offset: 0,
+      order: 'desc',
       limit: 100,
       total: 0,
       request: 0,
@@ -31,18 +32,18 @@ export class App extends React.Component {
 
   //default list
   componentDidMount(){
-    this.load(this.state.sorting, this.state.limit, this.state.offset);
+    this.load(this.state.sorting, this.state.limit, this.state.offset, this.state.order);
   }
 
   //load goods from server
-  load(sorting, limit, offset){
+  load(sorting, limit, offset, order){
     this.setState({request: this.state.request + 1})
 
     let options = {
       method: 'get',
       json: true,
     }
-    fetch(`${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}`, options)
+    fetch(`${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}&order=${order}`, options)
     .then(checkStatus)
     .then(parseJSON)
     .then((data)=>{
@@ -123,20 +124,26 @@ export class App extends React.Component {
   //change type of sorting
   changeSorting(sorting){
     this.setState({sorting, offset: 0, goods: []})
-    this.load(sorting, this.state.limit, 0)
+    this.load(sorting, this.state.limit, 0, this.state.order)
+  }
+
+  //change type of sorting
+  changeOrder(order){
+    this.setState({order, offset: 0, goods: []})
+    this.load(this.state.sorting, this.state.limit, 0, order)
   }
 
   //change limit
   changeLimit(limit){
     this.setState({limit, offset: 0, goods: []})
-    this.load(this.state.sorting, limit, 0)
+    this.load(this.state.sorting, limit, 0, this.state.order)
   }
 
   //load more goods
   loadMore(){
     let offset = this.state.offset + this.state.limit;
     this.setState({offset});
-    this.load(this.state.sorting, this.state.limit, offset);
+    this.load(this.state.sorting, this.state.limit, offset, this.state.order);
   }
 
   //actions after success request
@@ -207,6 +214,11 @@ export class App extends React.Component {
             <span>Sorting by:</span>
             <button className={this.state.sorting === 'id' ? 'active' : ''} onClick={(e)=>this.changeSorting('id')}>ID</button>
             <button className={this.state.sorting === 'price' ? 'active' : ''} onClick={(e)=>this.changeSorting('price')}>Price</button>
+          </div>
+          <div className="catalog-header-filter-block">
+           <span>Order by:</span>
+            <button className={this.state.order === 'asc' ? 'active' : ''} onClick={(e)=>this.changeOrder('asc')}>↑</button>
+            <button className={this.state.order === 'desc' ? 'active' : ''} onClick={(e)=>this.changeOrder('desc')}>↓</button>
           </div>
           <div className="catalog-header-filter-block">
             <span>Limit:</span>

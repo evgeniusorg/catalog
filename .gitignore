@@ -10,7 +10,7 @@ build/
 
 #config
 config.js
-bd.php
+db.php
 
 #css
 css/

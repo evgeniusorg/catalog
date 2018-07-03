@@ -4,23 +4,28 @@
       global $mysqli;
 
       //check params
-      if (!isset($_GET['limit']) OR !isset($_GET['offset']) OR !isset($_GET['sorting']) ) {
+      if (!isset($_GET['limit']) OR 
+        !isset($_GET['offset']) OR 
+        !isset($_GET['sorting']) OR 
+        !isset($_GET['order']) 
+      ) {
         header('Requets error', true, 400);
-        echo "Request has not valid params";
+        echo json_encode(array("message"=>"Request has not valid params"));
         return;
       }
 
       $limit = $mysqli->real_escape_string($_GET['limit']);
       $sorting = $mysqli->real_escape_string($_GET['sorting']);
-      $offset = $mysqli->real_escape_string($_GET['offset']);
+      $offset = $mysqli->real_escape_string($_GET['offset']); 
+      $order = $mysqli->real_escape_string($_GET['order']); 
 
-      $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT * FROM goods ORDER BY $sorting DESC LIMIT $offset, $limit";
+      $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT * FROM goods ORDER BY $sorting $order LIMIT $offset, $limit";
 
       $searchGoods = $mysqli->query($sql, MYSQLI_STORE_RESULT);
       if ($mysqli->errno) {
         die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
         header('Requets error', true, 400);
-        echo "Goods not found";
+        echo json_encode(array("message"=>"Goods not found"));
       }
       else{   
         $data =array();
@@ -35,6 +40,10 @@
           $row['price'] = floatval($row['price']);
           $data['goods'][] = $row;
         }
+        
+        $data['offset'] = $offset;
+        $data['limit'] = $limit;
+        $data['sorting'] = $sorting;
         
         echo json_encode($data);
       }
@@ -53,7 +62,7 @@
         !isset($request->img) 
       ) {
         header('Requets error', true, 400);
-        echo "Request has not valid data";
+        echo json_encode(array("message"=>"Request has not valid data"));
         return;
       }
 
@@ -64,7 +73,7 @@
 
       if (!is_numeric($price)) {
         header('Requets error', true, 400);
-        echo "Request has not valid price";
+        echo json_encode(array("message"=>"Request has not valid price"));
         return;
       }
 
@@ -76,7 +85,7 @@
       if ($mysqli->errno) {
         die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
         header('Requets error', true, 400);
-        echo "Goods not saved";
+        echo json_encode(array("message"=>"Goods not saved"));
       }
       else{ 
         $good = array(  
@@ -104,7 +113,7 @@
         !isset($request->img) 
       ) {
         header('Requets error', true, 400);
-        echo "Request has not valid data";
+        echo json_encode(array("message"=>"Request has not valid data"));
         return;
       }
 
@@ -115,7 +124,7 @@
 
       if (!is_numeric($price)) {
         header('Requets error', true, 400);
-        echo "Request has not valid price";
+        echo json_encode(array("message"=>"Request has not valid price"));
         return;
       }
 
@@ -127,7 +136,7 @@
       if ($mysqli->errno) {
         die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
         header('Requets error', true, 400);
-        echo "Goods not saved";
+        echo json_encode(array("message"=>"Goods not updated"));
       }
       else{ 
         $good = array(  
@@ -147,7 +156,7 @@
       //check params
       if (!isset($id)) {
         header('Requets error', true, 400);
-        echo "Request has not valid data";
+        echo json_encode(array("message"=>"Request has not valid data"));
         return;
       }
 
@@ -157,7 +166,7 @@
       if ($mysqli->errno) {
         die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
         header('Requets error', true, 400);
-        echo "Goods not saved";
+        echo json_encode(array("message"=>"Goods not deleted"));
       }
       else{
         echo json_encode(array("message"=>"Good $id was deleted"));
