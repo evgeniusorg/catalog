@@ -42,9 +42,10 @@ CREATE TABLE IF NOT EXISTS `goods` (
 ```
 
 ### API requests
-GET `/api/goods?limit=100,offset=0&sorting=id`
+GET `/api/goods?limit=100,offset=0&sorting=id&order=desc`
 Sorting is 'id' or 'price'.
-Response: 
+Order is 'asc' or 'desc'.
+Response (json): 
 ```
 {
     total: 1,
@@ -56,7 +57,11 @@ Response:
             price: 1234,
             img: 'url'
         }
-    ]
+    ],
+    offset: 0,
+    limit: 100,
+    sorting: 'id',
+    order: 'desc'
 }
 ```
 
@@ -71,7 +76,7 @@ Body:
     img: 'url'
 }
 ```
-Response: 
+Response (json): 
 ```
 {
     id: 1,
@@ -94,7 +99,7 @@ Body:
     img: 'url'
 }
 ```
-Response: 
+Response (json): 
 ```
 {
     id: 1,
@@ -106,7 +111,7 @@ Response:
 ```
 DELETE `/api/goods/:id`
 
-Response: 
+Response (json): 
 ```
 {
     message: "Good $id was deleted"

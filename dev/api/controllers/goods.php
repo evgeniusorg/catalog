@@ -44,6 +44,7 @@
         $data['offset'] = $offset;
         $data['limit'] = $limit;
         $data['sorting'] = $sorting;
+        $data['order'] = $order;
         
         echo json_encode($data);
       }

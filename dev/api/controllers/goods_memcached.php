@@ -6,7 +6,11 @@
       global $mysqli;
 
       //check params
-      if (!isset($_GET['limit']) OR !isset($_GET['offset']) OR !isset($_GET['sorting']) ) {
+      if (!isset($_GET['limit']) OR 
+        !isset($_GET['offset']) OR 
+        !isset($_GET['sorting']) OR
+        !isset($_GET['order']) 
+      ) {
         header('Requets error', true, 400);
         echo json_encode(array("message"=>"Request has not valid params"));
         return;
@@ -23,6 +27,13 @@
         $data =array();
         $data['total'] = count($goods);
         $data['goods'] = array();
+
+        //reverse array for order by desc
+        if ($order == 'desc') {
+          $goods = array_reverse($goods);
+        }
+
+        //select goods from range
         foreach ($goods as $index => $good) {
           if ($index + 1 > $offset && $index < $offset + $limit) {
             //load good info
@@ -32,7 +43,7 @@
       }
       else {
         //load data from db
-        $sql = "SELECT id, price FROM goods ORDER BY $sorting DESC";
+        $sql = "SELECT id, price FROM goods ORDER BY $sorting ASC";
 
         $searchGoods = $mysqli->query($sql, MYSQLI_STORE_RESULT);
         if ($mysqli->errno) {
@@ -41,25 +52,37 @@
           echo json_encode(array("message"=>"Goods not found"));
         }
         else{   
-          $goods = array();
+          $data = array();
+          $data['goods'] = array();
+
           $mcGoods = array();
-          $index = 0;
           while ($row = $searchGoods->fetch_assoc()) {
             $mcGoods[] = $row;
-            if($index + 1 > $offset && $index < $offset + $limit){
-              //load good info
-              $data['goods'][] = this->GET_GOOD($row['id']);
-            }
-            $index++;
           }
+
           //set data to memcached
           memcache_set($mc, 'goods_$sorting', $mcGoods, MEMCACHE_COMPRESSED, 60*60);
+
+          //reverse array for order by desc
+          if ($order == 'desc') {
+            $mcGoods = array_reverse($mcGoods);
+          }
+
+          //select goods from range
+          foreach ($mcGoods as $index => $good) {
+            if ($index + 1 > $offset && $index < $offset + $limit) {
+              //load good info
+              $data['goods'][] = this->GET_GOOD($good['id']);
+            }
+          }
+
           $data['total'] = count($mcGoods);
         }
 
         $data['offset'] = $offset;
         $data['limit'] = $limit;
         $data['sorting'] = $sorting;
+        $data['order'] = $order;
 
         echo json_encode($data);
       }
@@ -258,15 +281,15 @@
         $newList = array();
         $countGoods = count($goods);
         foreach ($goods as $index => $good) {
-          if ($index == 0 && $newGood[$sorting] > $good[$sorting]){
+          if ($index == 0 && $newGood[$sorting] < $good[$sorting]){
             $newList[] = $newGood;
             $newList[] = $good;
           }
-          else if ($index + 1 == countGoods && $newGood[$sorting] <= $good[$sorting]) {
+          else if ($index + 1 == countGoods && $newGood[$sorting] >= $good[$sorting]) {
             $newList[] = $good;
             $newList[] = $newGood;
           }
-          else if ($goods[$index - 1][$sorting] >= $newGood[$sorting] && $newGood[$sorting] > $goods[$index + 1][$sorting]) {
+          else if ($goods[$index - 1][$sorting] < $newGood[$sorting] && $newGood[$sorting] <= $goods[$index + 1][$sorting]) {
             $newList[] = $good;
             $newList[] = $newGood;
           }
