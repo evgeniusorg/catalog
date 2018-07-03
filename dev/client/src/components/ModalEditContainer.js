@@ -112,7 +112,7 @@ export default class ModalEdit extends React.Component {
                 <textarea placeholder="Description" onChange={(e)=>this.changeInput('description', e)} value={this.state.good.description}></textarea>
               </div>
               <div className="editor-form-right-btns">
-                <button type="submit" onClick={(e)=>this.verify(e)}>Save</button>
+                <button disabled={this.props.count > 0} type="submit" onClick={(e)=>this.verify(e)}>{this.props.count > 0 ? 'Wait...' : 'Save'}</button>
                 <button onClick={(e)=>this.props.close()}>Cancel</button>
               </div>
             </div>

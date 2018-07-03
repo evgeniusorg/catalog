@@ -18,7 +18,7 @@ export class App extends React.Component {
       sorting: 'id',
       offset: 0,
       order: 'desc',
-      limit: 100,
+      limit: 20,
       total: 0,
       request: 0,
       action:undefined,
@@ -69,8 +69,9 @@ export class App extends React.Component {
     .then(parseJSON)
     .then((data)=>{
       this.closeModal()
-      this.catchResponse([], this.state.total - 1, 'Good was added!')
-      this.load(this.state.sorting, this.state.offset, 0)
+      this.catchResponse([], this.state.total + 1, 'Good was added!')
+      this.setState({offset: 0})
+      this.load(this.state.sorting, this.state.limit, 0, this.state.order)
     })
     .catch((error)=>{
       this.catchError(error)
@@ -112,7 +113,7 @@ export class App extends React.Component {
     .then(checkStatus)
     .then(parseJSON)
     .then((data)=>{   
-      this.state({offset: this.state.offset - 1}) 
+      this.setState({offset: this.state.offset - 1}) 
       this.catchResponse([...this.state.goods].filter(e => e.id !== id), this.state.total - 1, 'Good was deleted!')
       this.closeModal()
     })
@@ -123,19 +124,19 @@ export class App extends React.Component {
 
   //change type of sorting
   changeSorting(sorting){
-    this.setState({sorting, offset: 0, goods: []})
+    this.setState({sorting, offset: 0, goods: [], total: 0})
     this.load(sorting, this.state.limit, 0, this.state.order)
   }
 
   //change type of sorting
   changeOrder(order){
-    this.setState({order, offset: 0, goods: []})
+    this.setState({order, offset: 0, goods: [], total: 0})
     this.load(this.state.sorting, this.state.limit, 0, order)
   }
 
   //change limit
   changeLimit(limit){
-    this.setState({limit, offset: 0, goods: []})
+    this.setState({limit, offset: 0, goods: [], total: 0})
     this.load(this.state.sorting, limit, 0, this.state.order)
   }
 
@@ -199,11 +200,10 @@ export class App extends React.Component {
 
   render() {
     return <div className="catalog">
-      {this.state.request > 0 && <PreloaderContainer />}
       {this.state.alert.type && <AlertContainer type={this.state.alert.type} text={this.state.alert.text} />}
       
-      <ModalEdit action={this.state.action} good={this.state.editGood} close={this.closeModal.bind(this)} add={this.addGood.bind(this)} edit={this.editGood.bind(this)}/>
-      <ModalDelete action={this.state.action} good={this.state.editGood} close={this.closeModal.bind(this)} delete={this.deleteGood.bind(this)}/>
+      <ModalEdit action={this.state.action} count={this.state.request} good={this.state.editGood} close={this.closeModal.bind(this)} add={this.addGood.bind(this)} edit={this.editGood.bind(this)}/>
+      <ModalDelete action={this.state.action} count={this.state.request} good={this.state.editGood} close={this.closeModal.bind(this)} delete={this.deleteGood.bind(this)}/>
       
       <div className="catalog-header">
         <div className="catalog-header-title">
@@ -237,8 +237,9 @@ export class App extends React.Component {
           return <GoodContainer key={good.id} good={good} showModal={this.showModal.bind(this)} />
         })}
       </div>
+      {this.state.request > 0 && !this.state.action && <PreloaderContainer />}
       <div className="catalog-footer">
-        {this.state.total > Object.keys(this.state.goods).length && <button onClick={(e)=>this.loadMore()}>Load more</button>}
+        {this.state.goods.length > 0 && this.state.total > Object.keys(this.state.goods).length && <button onClick={(e)=>this.loadMore()}>Load more</button>}
       </div>
     </div>
   } 

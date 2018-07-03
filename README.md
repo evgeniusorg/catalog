@@ -2,7 +2,7 @@
 Catalog of goods with edit/delete existed goods and add new goods.
 
 ### Client application
-Server allications was created via React.js
+Client allication was created via React.js.
 Start development:
 ```
 cd dev/client
@@ -19,14 +19,17 @@ cd src
 cp config.js.template config.js
 npm run build
 ```
+Copy files from `dev/client/build/` to root.
+Copy file `.htaccess` from `dev/` to root.
 
 ### Server application
-Server allications was created via PHP and Apache.
+Server allication was created via PHP and Apache.
 Start application:
 ```
 cd dev/api/libs
 cp bd.php.template bd.php
 ```
+Copy folder `api` from `dev/` to root.
 
 ### Database
 MySQL is used to manage data.

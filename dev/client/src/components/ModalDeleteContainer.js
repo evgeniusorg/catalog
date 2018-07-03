@@ -11,7 +11,7 @@ export default function ModalDelete(props) {
       <div className="modal-inner-body">
         <div className="modal-inner-body-text">You want delete good "{props.good.title}". Are you sure?</div>
         <div className="modal-inner-body-btns">
-          <button onClick={(e)=>props.delete(props.good.id)}>Yes</button>
+          <button disabled={props.count > 0} onClick={(e)=>props.delete(props.good.id)}>{props.count > 0 ? 'Wait...' : 'Yes'}</button>
           <button onClick={(e)=>props.close()}>No</button>
         </div>  
       </div>
