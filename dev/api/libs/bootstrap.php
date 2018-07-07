@@ -20,7 +20,12 @@
     
     //laungh function
     $controller = new $url[0];
-     $controller->$method($url[1]);
+    if (isset($url[1])) {
+        $controller->$method($url[1]);
+    }
+    else {
+        $controller->$method();
+    }
    }
   }
 ?>
