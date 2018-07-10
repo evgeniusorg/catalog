@@ -7,7 +7,7 @@ export default function GoodContainer(props) {
       <button onClick={(e)=>props.showModal('delete', props.good.id)}>Delete</button>
     </div>
     <div className="catalog-list-item-img">
-      <img alt={props.good.title} src={props.good.img} />
+      <img alt={props.good.title.substr(0, 15)} src={props.good.img} />
     </div>
     <div className="catalog-list-item-title">{props.good.title}</div>
     <div className="catalog-list-item-description">{props.good.description}</div>

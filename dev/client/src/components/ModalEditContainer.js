@@ -94,7 +94,7 @@ export default class ModalEdit extends React.Component {
           <form name="editor" className="editor-form">
             <div className="editor-form-left">
               <div className={this.state.validate.img ? 'editor-form-left-img error': 'editor-form-left-img'}>
-                <img alt={this.state.good.title} src={this.state.good.img} />
+                <img alt={this.state.good.title.substr(0, 15)} src={this.state.good.img} />
               </div>
               <input type="file" onChange={(e)=>this.changeFile(e)} />
             </div>
