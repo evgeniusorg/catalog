@@ -1,34 +1,47 @@
 <?php
   class goods {
-    public function GET($arg = false) {
+    public function GET($urlData, $formData) {
       global $mysqli;
       global $mc;
       
       //check params
-      if (!isset($_GET['limit']) OR 
-        !isset($_GET['offset']) OR 
-        !isset($_GET['sorting']) OR
-        !isset($_GET['order']) 
+      if (
+        !isset($formData["limit"]) OR 
+        !isset($formData["offset"]) OR 
+        !isset($formData["sorting"]) OR 
+        !isset($formData["order"])
       ) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid params"));
+        error(400, "Request has not all params", $formData);
         return;
       }
 
-      //parse params
-      $limit = $mysqli->real_escape_string($_GET['limit']);
-      $sorting = $mysqli->real_escape_string($_GET['sorting']);
-      $offset = $mysqli->real_escape_string($_GET['offset']);
-      $order = $mysqli->real_escape_string($_GET['order']); 
+      $formData["limit"] = intval($formData["limit"]);
+      $formData["offset"] = intval($formData["offset"]);
+
+      if (
+        $formData["limit"] <= 0 OR
+        $formData["offset"] < 0 OR
+
+        !in_array($formData["sorting"], array("id", "price")) OR
+        !in_array($formData["order"], array("asc", "desc")) 
+      ) {
+        error(400, "Request has not valid params", $formData);
+        return;
+      }
+
+      $sorting = $formData["sorting"];
+      $order = $formData["order"];
+      $offset = $formData["offset"];
+      $limit = $formData["limit"];
 
       //check data in memcached
-      if ($goods = memcache_get($mc, 'goods_'.$sorting)) {  
+      if ($goods = memcache_get($mc, "goods_".$sorting)) {  
         $data =array();
-        $data['total'] = count($goods);
-        $data['goods'] = array();
+        $data["total"] = count($goods);
+        $data["goods"] = array();
 
         //reverse array for order by desc
-        if ($order == 'desc') {
+        if ($order == "desc") {
           $goods = array_reverse($goods);
         }
 
@@ -36,7 +49,7 @@
         foreach ($goods as $index => $good) {
           if ($index + 1 > $offset && $index < $offset + $limit) {
             //load good info
-            $data['goods'][] = $this->GET_GOOD($good['id']);
+            $data["goods"][] = $this->GET_GOOD($good["id"]);
           }
         }
       }
@@ -44,28 +57,26 @@
         //load data from db
         $sql = "SELECT id, price FROM goods ORDER BY $sorting ASC";
 
-        $searchGoods = $mysqli->query($sql, MYSQLI_STORE_RESULT);
+        $searchGoods = $mysqli->query($sql);
         if ($mysqli->errno) {
-          die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
-          header('Requets error', true, 400);
-          echo json_encode(array("message"=>"Goods not found"));
+          error(400, "Goods not found", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
         }
         else{   
           $data = array();
-          $data['goods'] = array();
+          $data["goods"] = array();
 
           $mcGoods = array();
           while ($row = $searchGoods->fetch_assoc()) {
-            $row['id'] = intval($row['id']);
-            $row['price'] = floatval($row['price']);
+            $row["id"] = intval($row["id"]);
+            $row["price"] = floatval($row["price"]);
             $mcGoods[] = $row;
           }
 
           //set data to memcached
-          memcache_set($mc, 'goods_'.$sorting, $mcGoods, MEMCACHE_COMPRESSED, 60*60);
+          memcache_set($mc, "goods_".$sorting, $mcGoods, MEMCACHE_COMPRESSED, 60*60);
 
           //reverse array for order by desc
-          if ($order == 'desc') {
+          if ($order == "desc") {
             $mcGoods = array_reverse($mcGoods);
           }
 
@@ -73,64 +84,61 @@
           foreach ($mcGoods as $index => $good) {
             if ($index + 1 > $offset && $index < $offset + $limit) {
               //load good info
-              $data['goods'][] = $this->GET_GOOD($good['id']);
+              $data["goods"][] = $this->GET_GOOD($good["id"]);
             }
           }
 
-          $data['total'] = count($mcGoods);
+          $data["total"] = count($mcGoods);
         }
 
-        $data['offset'] = $offset;
-        $data['limit'] = $limit;
-        $data['sorting'] = $sorting;
-        $data['order'] = $order;
+        $data["offset"] = $offset;
+        $data["limit"] = $limit;
+        $data["sorting"] = $sorting;
+        $data["order"] = $order;
       }
 
       echo json_encode($data);
     }
 
     //create good
-    public function POST($arg = false) {
+    public function POST($urlData, $formData) {
       global $mysqli;
       global $mc;
 
-      $postdata = file_get_contents("php://input");
-      $request = json_decode($postdata);
+     //check params
+      if (
+        !isset($formData["title"]) OR 
+        !isset($formData["description"]) OR 
+        !isset($formData["price"]) OR
+        !isset($formData["img"]) OR
 
-      //check params
-      if (!isset($request->title) OR 
-        !isset($request->description) OR 
-        !isset($request->price) OR
-        !isset($request->img) 
+        !is_numeric($formData["price"]) OR
+        $formData["price"] <= 0 OR
+        $formData["price"] > 1000000 OR
+
+        strlen($formData["title"]) > 100 OR
+        strlen($formData["title"]) == 0 OR
+
+        strlen($formData["description"]) > 1000 OR
+        strlen($formData["description"]) == 0
+
       ) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid data"));
+        error(400, "Request has not valid data", $formData);
         return;
       }
 
-      //parse params
-      $title = $mysqli->real_escape_string($request->title);
-      $description = $mysqli->real_escape_string($request->description);
-      $price = $mysqli->real_escape_string($request->price);
-      $imgData = $mysqli->real_escape_string($request->img);
+      $title = $mysqli->real_escape_string($formData["title"]);
+      $description = $mysqli->real_escape_string($formData["description"]);
+      $imgData = $mysqli->real_escape_string($formData["img"]);
+      $price = $formData["price"];
 
-      //check price
-      if (!is_numeric($price)) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid price"));
-        return;
-      }
+      $imgUrl = imageSave($imgData);
 
-      $imgUrl = image::save($imgData);
-
-      //save good
       $sql = "INSERT INTO goods (title, description, price, img) VALUES ('$title', '$description', '$price', '$imgUrl')";
 
-      $addGood = $mysqli->query($sql, MYSQLI_STORE_RESULT);
+      $addGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Goods not saved"));
+        error(400, "Goods not saved", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
       }
       else{ 
         $id = intval($mysqli->insert_id);
@@ -143,57 +151,58 @@
         );
 
         //set good to memcached
-        memcache_set($mc, 'good_id_'.$id, $good, MEMCACHE_COMPRESSED, 60*60);
-        $this->ADD_GOOD_TO_MC('id', $good);
-        $this->ADD_GOOD_TO_MC('price', $good);
+        memcache_set($mc, "good_id_".$id, $good, MEMCACHE_COMPRESSED, 60*60);
+        $this->ADD_GOOD_TO_MC("id", $good);
+        $this->ADD_GOOD_TO_MC("price", $good);
 
         echo json_encode($good);
       }
     }
 
     //update good
-    public function PUT($id) {
+    public function PUT($urlData, $formData) {
       global $mysqli;
       global $mc;
 
-      $postdata = file_get_contents("php://input");
-      $request = json_decode($postdata);
-
+      $id = $urlData[0];
       //check params
-      if (!isset($id) OR 
-        !isset($request->title) OR 
-        !isset($request->description) OR 
-        !isset($request->price) OR
-        !isset($request->img) 
+      if (
+        !isset($id) OR 
+        !is_numeric($id) OR
+        $id <= 0 OR
+
+        !isset($formData["title"]) OR 
+        !isset($formData["description"]) OR 
+        !isset($formData["price"]) OR
+        !isset($formData["img"]) OR
+
+        !is_numeric($formData["price"]) OR
+        $formData["price"] <= 0 OR
+        $formData["price"] > 1000000 OR
+
+        strlen($formData["title"]) > 100 OR
+        strlen($formData["title"]) == 0 OR
+
+        strlen($formData["description"]) > 1000 OR
+        strlen($formData["description"]) == 0
+
       ) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid data"));
+        error(400, "Request has not valid data", $formData);
         return;
       }
 
-      //parse params
-      $title = $mysqli->real_escape_string($request->title);
-      $description = $mysqli->real_escape_string($request->description);
-      $price = $mysqli->real_escape_string($request->price);
-      $imgData = $mysqli->real_escape_string($request->img);
+      $title = $mysqli->real_escape_string($formData["title"]);
+      $description = $mysqli->real_escape_string($formData["description"]);
+      $imgData = $mysqli->real_escape_string($formData["img"]);
+      $price = $formData["price"];
 
-      //check price
-      if (!is_numeric($price)) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid price"));
-        return;
-      }
+      $imgUrl = imageSave($imgData);
 
-      $imgUrl = image::save($imgData);
-
-      //update good
       $sql = "UPDATE goods SET title='$title', description='$description', price='$price', img='$imgUrl' WHERE id=$id";
 
-      $updateGood = $mysqli->query($sql, MYSQLI_STORE_RESULT);
+      $updateGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Goods not updated"));
+        error(400, "Goods not updated", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
       }
       else{    
         $good = array(  
@@ -205,7 +214,7 @@
         );
 
         //update good in memcached
-        memcache_set($mc, 'good_id_'.$id, $good, MEMCACHE_COMPRESSED, 60*60);
+        memcache_set($mc, "good_id_".$id, $good, MEMCACHE_COMPRESSED, 60*60);
         $this->UPDATE_GOOOD_IN_MC($good);
 
         echo json_encode($good);
@@ -213,31 +222,34 @@
     }
 
     //delete good
-    public function DELETE($id = false) {
+    public function DELETE($urlData, $formData) {
       global $mysqli;
       global $mc;
 
+      $id = $urlData[0];
+
       //check params
-      if (!isset($id)) {
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Request has not valid data"));
+      if (
+        !isset($id) OR
+        !is_numeric($id) OR
+        $id <= 0
+      ) {
+        error(400, "Request has not valid data", $urlData);
         return;
       }
 
       //delete good
       $sql = "DELETE FROM goods WHERE id=$id";
 
-      $deleteGood = $mysqli->query($sql, MYSQLI_STORE_RESULT);
+      $deleteGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
-        header('Requets error', true, 400);
-        echo json_encode(array("message"=>"Goods not deleted"));
+        error(400, "Goods not deleted", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
       }
       else{
         //delete good from memcached
-        memcache_delete($mc, 'good_id_'.$id);
-        $this->DELETE_GOOD_FROM_MC('id', $id);
-        $this->DELETE_GOOD_FROM_MC('price', $id);
+        memcache_delete($mc, "good_id_".$id);
+        $this->DELETE_GOOD_FROM_MC("id", $id);
+        $this->DELETE_GOOD_FROM_MC("price", $id);
 
         echo json_encode(array("message"=>"Good $id was deleted"));
       }
@@ -248,23 +260,21 @@
       global $mysqli;
       global $mc;
 
-      if ($good = memcache_get($mc, 'good_id_'.$id)){
+      if ($good = memcache_get($mc, "good_id_".$id)){
         return $good;
       }
       else{
         $sql = "SELECT * FROM goods WHERE id=$id";
 
-        $searchGood = $mysqli->query($sql, MYSQLI_STORE_RESULT);
+        $searchGood = $mysqli->query($sql);
         if ($mysqli->errno) {
-          die('Select Error (' . $mysqli->errno . ') ' . $mysqli->error);
-          header('Requets error', true, 400);
-          echo json_encode(array("message"=>"Good not found"));
+          error(400, "Good not found", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
         }
         else{  
           $good = $searchGood->fetch_array(MYSQL_ASSOC);
-          $good['id'] = intval($good['id']);
-          $good['price'] = floatval($good['price']);
-          memcache_set($mc, 'good_id_'.$id, $good, MEMCACHE_COMPRESSED, 60*60);
+          $good["id"] = intval($good["id"]);
+          $good["price"] = floatval($good["price"]);
+          memcache_set($mc, "good_id_".$id, $good, MEMCACHE_COMPRESSED, 60*60);
           return $good;
         } 
       }
@@ -274,14 +284,14 @@
     private function DELETE_GOOD_FROM_MC($sorting, $id){  
       global $mc;
 
-      if ($goods = memcache_get($mc, 'goods_'.$sorting)){
+      if ($goods = memcache_get($mc, "goods_".$sorting)){
         $newList = array();
         foreach ($goods as $good) {
-          if (intval($id) != $good['id']) {
+          if (intval($id) != $good["id"]) {
             $newList[] = $good;
           }
         }
-        memcache_set($mc, 'goods_'.$sorting, $newList, MEMCACHE_COMPRESSED, 60*60);
+        memcache_set($mc, "goods_".$sorting, $newList, MEMCACHE_COMPRESSED, 60*60);
       }
       return false;
     }
@@ -290,21 +300,21 @@
     private function ADD_GOOD_TO_MC($sorting, $newGood){
       global $mc;
 
-      if ($goods = memcache_get($mc, 'goods_'.$sorting)){
+      if ($goods = memcache_get($mc, "goods_".$sorting)){
         $newList = array();
         
         foreach ($goods as $index => $good) {
           if ($index == 0 && $newGood[$sorting] < $good[$sorting]){
-            $newList[] = array('id' => $newGood['id'], 'price' => $newGood['price']);
+            $newList[] = array("id" => $newGood["id"], "price" => $newGood["price"]);
             $newList[] = $good;
           }
           else if ($good[$sorting] <= $newGood[$sorting] && isset($goods[$index + 1]) == false){
             $newList[] = $good;
-            $newList[] = array('id' => $newGood['id'], 'price' => $newGood['price']);
+            $newList[] = array("id" => $newGood["id"], "price" => $newGood["price"]);
           }
           else if ($good[$sorting] <= $newGood[$sorting] && $newGood[$sorting] < $goods[$index + 1][$sorting]){
             $newList[] = $good;
-            $newList[] = array('id' => $newGood['id'], 'price' => $newGood['price']);
+            $newList[] = array("id" => $newGood["id"], "price" => $newGood["price"]);
           }
           else {
             $newList[] = $good;
@@ -312,10 +322,10 @@
         }
 
         if (count($goods) == 0 ) {
-          $newList[] = array('id' => $newGood['id'], 'price' => $newGood['price']);
+          $newList[] = array("id" => $newGood["id"], "price" => $newGood["price"]);
         }
 
-        memcache_set($mc, 'goods_'.$sorting, $newList, MEMCACHE_COMPRESSED, 60*60);
+        memcache_set($mc, "goods_".$sorting, $newList, MEMCACHE_COMPRESSED, 60*60);
       }
       return false;
     }
@@ -324,12 +334,12 @@
     private function UPDATE_GOOOD_IN_MC($newGood){
       global $mc;
 
-      $id = $newGood['id'];
-      $oldGood = memcache_get($mc, 'good_id_'.$id);
+      $id = $newGood["id"];
+      $oldGood = memcache_get($mc, "good_id_".$id);
 
-      if ( $oldGood && $oldGood['price'] != $newGood['price'] && $goods = memcache_get($mc, 'goods_price') ){
-        $this->DELETE_GOOD_FROM_MC('price', $id);
-        $this->ADD_GOOD_TO_MC('price', $newGood);
+      if ( $oldGood && $oldGood["price"] != $newGood["price"] && $goods = memcache_get($mc, "goods_price") ){
+        $this->DELETE_GOOD_FROM_MC("price", $id);
+        $this->ADD_GOOD_TO_MC("price", $newGood);
       }
       return false;
     }
