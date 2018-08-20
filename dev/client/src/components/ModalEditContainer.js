@@ -73,12 +73,19 @@ export default class ModalEdit extends React.Component {
   }
 
   componentWillReceiveProps(newxProps){
-    this.setState({good: newxProps.good, validate: {
-      title: false,
-      description: false,
-      price: false,
-      img: false,
-    }})
+    if (
+      !this.state.good || 
+      !newxProps.good || 
+      !this.state.good.id || 
+      this.state.good.id !== newxProps.good.id
+    ) {
+      this.setState({good: newxProps.good, validate: {
+        title: false,
+        description: false,
+        price: false,
+        img: false,
+      }})
+    }
   }
 
   render() {
