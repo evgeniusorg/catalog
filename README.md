@@ -48,9 +48,10 @@ ALTER TABLE `goods`
 ```
 
 ### API requests
-GET `/api/goods?limit=100,offset=0&sorting=id&order=desc`
+GET `/api/goods?limit=100,offset=0&sorting=id&order=desc&lastid=0`
 Sorting is 'id' or 'price'.
 Order is 'asc' or 'desc'.
+If sorting is 'price' lastid is id of last loaded good.
 Response (json): 
 ```
 {
@@ -67,7 +68,9 @@ Response (json):
     offset: 0,
     limit: 100,
     sorting: 'id',
-    order: 'desc'
+    order: 'desc',
+    lastid: 0
+
 }
 ```
 
