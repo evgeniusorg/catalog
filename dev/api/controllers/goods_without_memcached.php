@@ -127,7 +127,7 @@
 
       $addGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not saved", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Goods not saved", "Insert request error (" . $mysqli->errno . ") " . $mysqli->error);
       }
       else{ 
         $good = array(  
@@ -182,7 +182,10 @@
 
       $updateGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not updated", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Good not updated", "Put error (" . $mysqli->errno . ") " . $mysqli->error);
+      }
+      else if ($mysqli->affected_rows == 0){
+        error(400, "Good not updated", "Put error (good not found)");
       }
       else{ 
         $good = array(  
@@ -215,7 +218,10 @@
 
       $deleteGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not deleted", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Good not deleted", "Delete error (" . $mysqli->errno . ") " . $mysqli->error);
+      }
+      else if ($mysqli->affected_rows == 0){
+        error(400, "Good not deleted", "Delete error (good not found)");
       }
       else{
         echo json_encode(array("message"=>"Good $id was deleted"));

@@ -59,7 +59,7 @@
   
         $searchGoods = $mysqli->query($sql);
         if ($mysqli->errno) {
-          error(400, "Goods not found", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+          error(400, "Goods not found", "Select error (" . $mysqli->errno . ") " . $mysqli->error);
         }
         else{   
           $mcGoods = array();
@@ -126,7 +126,7 @@
 
       $addGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not saved", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Goods not saved", "Post error (" . $mysqli->errno . ") " . $mysqli->error);
       }
       else{ 
         $id = intval($mysqli->insert_id);
@@ -190,7 +190,10 @@
 
       $updateGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not updated", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Goods not updated", "Put error (" . $mysqli->errno . ") " . $mysqli->error);
+      }
+      else if ($mysqli->affected_rows == 0){
+        error(400, "Good not updated", "Put error (good not found)");
       }
       else{    
         $good = array(  
@@ -231,7 +234,10 @@
 
       $deleteGood = $mysqli->query($sql);
       if ($mysqli->errno) {
-        error(400, "Goods not deleted", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
+        error(400, "Goods not deleted", "Delete error (" . $mysqli->errno . ") " . $mysqli->error);
+      }
+      else if ($mysqli->affected_rows == 0){
+        error(400, "Good not deleted", "Delete error (good not found)");
       }
       else{
         //delete good from memcached
