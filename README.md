@@ -39,9 +39,12 @@ CREATE TABLE IF NOT EXISTS `goods` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `title` text NOT NULL,
   `description` text NOT NULL,
-  `price` float NOT NULL,
+  `price` decimal(12,2) NOT NULL,
   `img` text NOT NULL
 );
+
+ALTER TABLE `goods`
+  ADD PRIMARY KEY (`id`), ADD KEY `price` (`price`);
 ```
 
 ### API requests

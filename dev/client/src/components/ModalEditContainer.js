@@ -26,7 +26,7 @@ export default class ModalEdit extends React.Component {
       status = true
     }
 
-    if (/^\d+(.\d{2})?$/ig.test(this.state.good.price) === false) {
+    if (/^\d{1,10}(\.\d{2})?$/ig.test(this.state.good.price) === false) {
       validate.price = 'Price is not valid!'
       status = true
     }

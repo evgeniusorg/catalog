@@ -9,16 +9,19 @@
         !isset($formData["limit"]) OR 
         !isset($formData["offset"]) OR 
         !isset($formData["sorting"]) OR 
-        !isset($formData["order"])
+        !isset($formData["order"]) OR
+        !isset($formData["lastid"])
       ) {
         error(400, "Request has not all params", $formData);
         return;
       }
 
       $formData["limit"] = intval($formData["limit"]);
-      $formData["offset"] = intval($formData["offset"]);
+      $formData["offset"] = floatval($formData["offset"]);
+      $formData["lastid"] = intval($formData["lastid"]);
 
       if (
+        $formData["lastid"] < 0 OR
         $formData["limit"] <= 0 OR
         $formData["offset"] < 0 OR
 
@@ -33,38 +36,32 @@
       $order = $formData["order"];
       $offset = $formData["offset"];
       $limit = $formData["limit"];
+      $lastId = $formData["lastid"];
+
+      $data = array();
+      $data["total"] = 0;
+      $data["goods"] = array();
 
       //check data in memcached
       if ($goods = memcache_get($mc, "goods_".$sorting)) {  
-        $data =array();
         $data["total"] = count($goods);
-        $data["goods"] = array();
-
-        //reverse array for order by desc
-        if ($order == "desc") {
-          $goods = array_reverse($goods);
-        }
 
         //select goods from range
-        foreach ($goods as $index => $good) {
-          if ($index + 1 > $offset && $index < $offset + $limit) {
-            //load good info
-            $data["goods"][] = $this->GET_GOOD($good["id"]);
-          }
-        }
+        $data["goods"] = $this->FILTER_OF_GOODS($goods, $sorting, $order, $offset, $lastId, $limit);
       }
       else {
         //load data from db
-        $sql = "SELECT id, price FROM goods ORDER BY $sorting ASC";
-
+        $sql = "SELECT id, price FROM goods ORDER BY ";
+        if ($sorting == "price") {
+          $sql .= "price $order, ";
+        }
+        $sql .= "id $order";
+  
         $searchGoods = $mysqli->query($sql);
         if ($mysqli->errno) {
           error(400, "Goods not found", "Select Error (" . $mysqli->errno . ") " . $mysqli->error);
         }
         else{   
-          $data = array();
-          $data["goods"] = array();
-
           $mcGoods = array();
           while ($row = $searchGoods->fetch_assoc()) {
             $row["id"] = intval($row["id"]);
@@ -75,19 +72,9 @@
           //set data to memcached
           memcache_set($mc, "goods_".$sorting, $mcGoods, MEMCACHE_COMPRESSED, 60*60);
 
-          //reverse array for order by desc
-          if ($order == "desc") {
-            $mcGoods = array_reverse($mcGoods);
-          }
-
           //select goods from range
-          foreach ($mcGoods as $index => $good) {
-            if ($index + 1 > $offset && $index < $offset + $limit) {
-              //load good info
-              $data["goods"][] = $this->GET_GOOD($good["id"]);
-            }
-          }
-
+          $data["goods"] = $this->FILTER_OF_GOODS($mcGoods, $sorting, $order, $offset, $lastId, $limit);
+          
           $data["total"] = count($mcGoods);
         }
 
@@ -95,6 +82,7 @@
         $data["limit"] = $limit;
         $data["sorting"] = $sorting;
         $data["order"] = $order;
+        $data["lastid"] = $lastId;
       }
 
       echo json_encode($data);
@@ -114,7 +102,7 @@
 
         !is_numeric($formData["price"]) OR
         $formData["price"] <= 0 OR
-        $formData["price"] > 1000000 OR
+        $formData["price"] > 10000000000 OR
 
         strlen($formData["title"]) > 100 OR
         strlen($formData["title"]) == 0 OR
@@ -178,7 +166,7 @@
 
         !is_numeric($formData["price"]) OR
         $formData["price"] <= 0 OR
-        $formData["price"] > 1000000 OR
+        $formData["price"] > 10000000000 OR
 
         strlen($formData["title"]) > 100 OR
         strlen($formData["title"]) == 0 OR
@@ -342,6 +330,40 @@
         $this->ADD_GOOD_TO_MC("price", $newGood);
       }
       return false;
+    }
+
+    private function FILTER_OF_GOODS($fullGoods, $sorting, $order, $offset, $lastId, $limit){
+      $selectGoods = array();
+
+      foreach ($fullGoods as $good) {
+        if ($sorting == "id" AND $order == 'asc' && $good["id"] > $offset) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "id" AND $order == 'desc' AND $offset > 0 AND $good["id"] < $offset) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "id" AND $order == 'desc' AND $offset == 0) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "price" AND $order == 'asc' AND $good["price"] > $offset) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "price" AND $order == 'desc' AND $offset > 0 AND $lastId > 0 AND $good["price"] < $offset AND $good["id"] < $lastId) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "price" AND $order == 'desc' AND $offset > 0 AND $lastId == 0 AND $good["price"] < $offset) {
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }
+        else if ($sorting == "price" AND $order == 'desc' AND $offset == 0){
+          $selectGoods[] = $this->GET_GOOD($good["id"]); 
+        }     
+
+        if (count($selectGoods) >= $limit) {
+          break;
+        }
+      }
+
+      return $selectGoods;
     }
   }
 ?>

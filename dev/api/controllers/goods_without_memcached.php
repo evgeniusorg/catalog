@@ -8,23 +8,26 @@
         !isset($formData["limit"]) OR 
         !isset($formData["offset"]) OR 
         !isset($formData["sorting"]) OR 
-        !isset($formData["order"])
+        !isset($formData["order"]) OR
+        !isset($formData["lastid"])
       ) {
         error(400, "Request has not all params", $formData);
         return;
       }
 
       $formData["limit"] = intval($formData["limit"]);
-      $formData["offset"] = intval($formData["offset"]);
+      $formData["offset"] = floatval($formData["offset"]);
+      $formData["lastid"] = intval($formData["lastid"]);
 
       if (
+        $formData["lastid"] < 0 OR
         $formData["limit"] <= 0 OR
         $formData["offset"] < 0 OR
 
         !in_array($formData["sorting"], array("id", "price")) OR
         !in_array($formData["order"], array("asc", "desc")) 
       ) {
-        error(400, "Request has not valid params", $formData);
+        error(400, "Request has not valid parameters", $formData);
         return;
       }
 
@@ -32,8 +35,33 @@
       $order = $formData["order"];
       $offset = $formData["offset"];
       $limit = $formData["limit"];
+      $lastId = $formData["lastid"];
 
-      $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT * FROM goods ORDER BY $sorting $order LIMIT $offset, $limit";
+      $sql = "SELECT * FROM goods ";
+
+      if ($sorting == "id" AND $order == 'asc') {
+        $sql .= "WHERE id > $offset ORDER BY id ASC ";
+      }
+      else if ($sorting == "id" AND $order == 'desc' AND $offset > 0) {
+        $sql .= "WHERE id < $offset ORDER BY id DESC ";
+      }
+      else if ($sorting == "id" AND $order == 'desc' AND $offset == 0) {
+        $sql .= "ORDER BY id DESC ";
+      }
+      else if ($sorting == "price" AND $order == 'asc') {
+        $sql .= "WHERE price > $offset OR (price = $offset AND id > $lastId) ORDER BY price ASC, id ASC ";
+      }
+      else if ($sorting == "price" AND $order == 'desc' AND $offset > 0 AND $lastId > 0) {
+        $sql .= "WHERE price < $offset OR (price = $offset AND id < $lastId) ORDER BY price DESC, id DESC ";
+      }
+      else if ($sorting == "price" AND $order == 'desc' AND $offset > 0 AND $lastId == 0) {
+        $sql .= "WHERE price <= $offset ORDER BY price DESC, id DESC ";
+      }
+      else {
+        $sql .= "ORDER BY price DESC, id DESC ";
+      }
+
+      $sql .= "LIMIT $limit";
 
       $searchGoods = $mysqli->query($sql);
       if ($mysqli->errno) {
@@ -43,9 +71,9 @@
         $data =array();
         $data["goods"] = array();
 
-        $countQuery= $mysqli->query("SELECT FOUND_ROWS()");
+        $countQuery= $mysqli->query("SELECT count(id) total FROM goods");
         $count = $countQuery->fetch_array();
-        $data["total"] = $count["FOUND_ROWS()"];
+        $data["total"] = intval($count["total"]);
 
         while ($row = $searchGoods->fetch_assoc()) {
           $row["id"] = intval($row["id"]);
@@ -57,6 +85,7 @@
         $data["limit"] = $limit;
         $data["sorting"] = $sorting;
         $data["order"] = $order;
+        $data["lastid"] = $lastId;
         
         echo json_encode($data);
       }
@@ -74,7 +103,7 @@
 
         !is_numeric($formData["price"]) OR
         $formData["price"] <= 0 OR
-        $formData["price"] > 1000000 OR
+        $formData["price"] > 10000000000 OR
 
         strlen($formData["title"]) > 100 OR
         strlen($formData["title"]) == 0 OR
@@ -129,7 +158,7 @@
 
         !is_numeric($formData["price"]) OR
         $formData["price"] <= 0 OR
-        $formData["price"] > 1000000 OR
+        $formData["price"] > 10000000000 OR
 
         strlen($formData["title"]) > 100 OR
         strlen($formData["title"]) == 0 OR

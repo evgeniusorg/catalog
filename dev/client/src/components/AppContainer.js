@@ -1,4 +1,6 @@
 import React from 'react'
+import request from 'browser-request';
+
 import CONFIG from '../config'
 
 import PreloaderContainer from './PreloaderContainer'
@@ -6,8 +8,6 @@ import AlertContainer from './AlertContainer'
 import ModalEdit from './ModalEditContainer'
 import ModalDelete from './ModalDeleteContainer'
 import GoodContainer from './GoodContainer'
-
-import {checkStatus, parseJSON} from '../modules/modulesRequest'
 
 export class App extends React.Component {
   constructor(props){
@@ -17,6 +17,7 @@ export class App extends React.Component {
       goods: [],
       sorting: 'id',
       offset: 0,
+      lastId:0,
       order: 'desc',
       limit: 20,
       total: 0,
@@ -32,49 +33,47 @@ export class App extends React.Component {
 
   //default list
   componentDidMount(){
-    this.load(this.state.sorting, this.state.limit, this.state.offset, this.state.order);
+    this.load(this.state.sorting, this.state.limit, this.state.offset, this.state.order, this.state.lastId);
   }
 
   //load goods from server
-  load(sorting, limit, offset, order){
+  load(sorting, limit, offset, order, lastId){
     this.setState({request: this.state.request + 1})
 
     let options = {
+      url: `${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}&order=${order}&lastid=${lastId}`,
       method: 'get',
       json: true,
     }
-    fetch(`${CONFIG.URL_API}goods?sorting=${sorting}&limit=${limit}&offset=${offset}&order=${order}`, options)
-    .then(checkStatus)
-    .then(parseJSON)
-    .then((data)=>{
-      this.catchResponse([...this.state.goods, ...data.goods], data.total)
-    })
-    .catch((error)=>{
-      this.catchError(error)
-    })
+
+    request(options, (error, response, body) =>{
+      if (error || response.status >= 400) {
+        this.catchError(error || body.message || response.statusText);
+        return;
+      }
+      this.catchResponse([...this.state.goods, ...body.goods], body.total)
+    })   
+
   }
 
   //save new good
   addGood(good){
     this.setState({request: this.state.request + 1})
     let options = {
+      url: `${CONFIG.URL_API}goods/`,
       method: 'post',
-      body: JSON.stringify(good),
-      header:{
-        'Content-Type': 'application/json',
-      },
+      json: good,
     }
-    fetch(`${CONFIG.URL_API}goods/`, options)
-    .then(checkStatus)
-    .then(parseJSON)
-    .then((data)=>{
+
+    request(options, (error, response, body) =>{
+      if (error || response.status >= 400) {
+        this.catchError(error || body.message || response.statusText);
+        return;
+      }
       this.closeModal()
       this.catchResponse([], this.state.total + 1, 'Good was added!')
-      this.setState({offset: 0})
-      this.load(this.state.sorting, this.state.limit, 0, this.state.order)
-    })
-    .catch((error)=>{
-      this.catchError(error)
+      this.setState({offset: 0, lastId: 0})
+      this.load(this.state.sorting, this.state.limit, 0, this.state.order, this.state.lastId)
     })
   }
 
@@ -83,21 +82,18 @@ export class App extends React.Component {
     this.setState({request: this.state.request + 1})
 
     let options = {
+      url: `${CONFIG.URL_API}goods/${good.id}`,
       method: 'put',
       body: JSON.stringify(good),
-      header:{
-        'Content-Type': 'application/json',
-      },
+      json: true,
     }
-    fetch(`${CONFIG.URL_API}goods/${good.id}`, options)
-    .then(checkStatus)
-    .then(parseJSON)
-    .then((data)=>{
+    request(options, (error, response, body) =>{
+      if (error || response.status >= 400) {
+        this.catchError(error || body.message || response.statusText);
+        return;
+      }
       this.catchResponse([...this.state.goods].map(e => e.id === good.id ? good : e), this.state.total, 'Good was updated!')
       this.closeModal()
-    })
-    .catch((error)=>{
-      this.catchError(error)
     })
   }
 
@@ -106,50 +102,58 @@ export class App extends React.Component {
     this.setState({request: this.state.request + 1})
 
     let options = {
+      url: `${CONFIG.URL_API}goods/${id}`,
       method: 'delete',
+      json: true,
     }
 
-    fetch(`${CONFIG.URL_API}goods/${id}`, options)
-    .then(checkStatus)
-    .then(parseJSON)
-    .then((data)=>{   
-      this.setState({offset: this.state.offset - 1}) 
+    request(options, (error, response, body) =>{
+      if (error || response.status >= 400) {
+        this.catchError(error || body.message || response.statusText);
+        return;
+      }
       this.catchResponse([...this.state.goods].filter(e => e.id !== id), this.state.total - 1, 'Good was deleted!')
       this.closeModal()
-    })
-    .catch((error)=>{
-      this.catchError(error)
     })
   }
 
   //change type of sorting
   changeSorting(sorting){
-    this.setState({sorting, offset: 0, goods: [], total: 0})
-    this.load(sorting, this.state.limit, 0, this.state.order)
+    this.setState({sorting, offset: 0, goods: [], total: 0, lastId: 0})
+    this.load(sorting, this.state.limit, 0, this.state.order, 0)
   }
 
   //change type of sorting
   changeOrder(order){
-    this.setState({order, offset: 0, goods: [], total: 0})
-    this.load(this.state.sorting, this.state.limit, 0, order)
+    this.setState({order, offset: 0, goods: [], total: 0, lastId: 0})
+    this.load(this.state.sorting, this.state.limit, 0, order, 0)
   }
 
   //change limit
   changeLimit(limit){
-    this.setState({limit, offset: 0, goods: [], total: 0})
-    this.load(this.state.sorting, limit, 0, this.state.order)
+    this.setState({limit, offset: 0, goods: [], total: 0, lastId: 0})
+    this.load(this.state.sorting, limit, 0, this.state.order, 0)
   }
 
   //load more goods
   loadMore(){
-    let offset = this.state.offset + this.state.limit;
-    this.setState({offset});
-    this.load(this.state.sorting, this.state.limit, offset, this.state.order);
+    this.load(this.state.sorting, this.state.limit, this.state.offset, this.state.order, this.state.lastId);
   }
 
   //actions after success request
   catchResponse(goods, total, alert){
-    this.setState({goods, total, request: this.state.request - 1})
+    let offset = 0;
+    let lastId = 0;
+
+    if (goods.length > 0 && this.state.sorting === 'price') {
+        offset = goods[goods.length -1].price
+        lastId = goods[goods.length -1].id
+    }
+    if (goods.length > 0 && this.state.sorting === 'id') {
+        offset = goods[goods.length -1].id
+    }
+  
+    this.setState({goods, total, request: this.state.request - 1, offset, lastId})
     if (!alert) return
 
     this.setState({
@@ -167,7 +171,7 @@ export class App extends React.Component {
       request: this.state.request - 1, 
       alert: {
         type: 'error',
-        text: error.message,
+        text: error,
       }
     })
     this.closeAllert()
@@ -199,6 +203,7 @@ export class App extends React.Component {
   }
 
   render() {
+    
     return <div className="catalog">
       {this.state.alert.type && <AlertContainer type={this.state.alert.type} text={this.state.alert.text} />}
       
